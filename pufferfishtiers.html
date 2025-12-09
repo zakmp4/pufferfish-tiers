@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pufferfish PVP Leaderboard</title>
+    <style>
+        body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#fff;margin:0;padding:20px;min-height:100vh}
+        header{text-align:center;margin-bottom:30px}
+        h1{font-size:3rem;margin:0;background:linear-gradient(90deg,#FFD700,#FFA500);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        #login-btn{background:#FFD700;color:#000;border:none;padding:12px 30px;font-size:1.1rem;border-radius:50px;cursor:pointer;font-weight:bold}
+        #login-btn:hover{background:#FFA500;transform:scale(1.05)}
+        #staff-panel{display:none;background:rgba(255,255,255,0.1);backdrop-filter:blur(12px);padding:25px;border-radius:20px;margin:20px auto;max-width:600px;border:1px solid rgba(255,215,0,0.4)}
+        #staff-panel h3{color:#FFD700;margin-top:0}
+        input,button{padding:12px;margin:8px 0;border-radius:10px;border:none;width:100%;font-size:1rem}
+        input{background:rgba(255,255,255,0.2);color:white;border:1px solid #FFD700}
+        input::placeholder{color:#ccc}
+        button{background:#FFD700;color:black;font-weight:bold;cursor:pointer}
+        button:hover{background:#FFA500}
+        #search-bar{width:100%;max-width:600px;margin:30px auto;padding:15px 20px;font-size:1.2rem;border-radius:50px;background:rgba(255,255,255,0.15);border:2px solid #FFD700;color:white;display:block}
+        #leaderboard{max-width:900px;margin:40px auto;background:rgba(0,0,0,0.4);border-radius:20px;padding:20px;backdrop-filter:blur(10px);border:1px solid rgba(255,215,0,0.3)}
+        .tier-section{margin:35px 0}
+        .tier-header{background:#222;padding:12px;border-radius:12px;text-align:center;font-size:1.4rem;font-weight:bold}
+        .player-entry{background:rgba(255,255,255,0.08);margin:8px 0;padding:14px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;transition:.3s}
+        .player-entry:hover{background:rgba(255,215,0,0.15);transform:translateY(-2px)}
+        .player-name{font-weight:bold;font-size:1.2rem;cursor:pointer;color:#FFD700}
+        .player-name:hover{text-decoration:underline}
+        .player-points{background:#FFD700;color:black;padding:4px 10px;border-radius:20px;font-weight:bold}
+        #scorecard-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;padding:30px;border-radius:20px;z-index:1000;width:350px;box-shadow:0 0 30px rgba(255,215,0,0.6);border:2px solid #FFD700}
+        #overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:999}
+        .close-btn{position:absolute;top:10px;right:15px;font-size:30px;cursor:pointer;color:#FFD700}
+        .avatar img{width:100px;height:100px;border-radius:50%;border:4px solid #FFD700}
+        .tier-circles{display:flex;justify-content:center;gap:8px;margin:15px 0;flex-wrap:wrap}
+        .circle{width:20px;height:20px;border-radius:50%;background:#333;border:2px solid #666}
+        .circle.active{background:#FFD700;border-color:#FFA500;box-shadow:0 0 10px #FFD700}
+        #error-toast{position:fixed;bottom:20px;right:20px;background:#ff3333;color:white;padding:15px 25px;border-radius:10px;font-weight:bold;display:none;z-index:1001}
+        #login-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(30,30,46,0.95);padding:30px;border-radius:20px;z-index:1000;width:350px;border:2px solid #FFD700;backdrop-filter:blur(10px)}
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Pufferfish PVP Leaderboard</h1>
+        <button id="login-btn">Staff Login</button>
+    </header>
+
+    <div id="staff-panel">
+        <h3>Add / Update Player</h3>
+        <form id="add-player-form">
+            <input type="text" id="add-username" placeholder="Minecraft Username" required>
+            <input type="number" id="add-points" placeholder="Points" min="0" required>
+            <button type="submit">Update Player</button>
+        </form>
+        <h3>Remove Player</h3>
+        <form id="remove-player-form">
+            <input type="text" id="remove-username" placeholder="Username to remove" required>
+            <button type="submit" style="background:#ff3333;">Remove</button>
+        </form>
+    </div>
+
+    <input type="text" id="search-bar" placeholder="Search player...">
+
+    <div id="leaderboard"></div>
+
+    <div id="overlay"></div>
+    <div id="scorecard-modal"><span class="close-btn" onclick="closeModal()">X</span><div id="modal-content"></div></div>
+    <div id="error-toast">Error: User not found</div>
+
+    <div id="login-modal">
+        <h3>Staff Login</h3>
+        <form id="login-form">
+            <input type="text" id="user" placeholder="Username" required>
+            <input type="password" id="pass" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <script>
+        const POINTS_PER_TIER = 100;
+
+        // HT1 God at the very top → LT5 Rookie at the very bottom
+        const tierOrder = [
+            {code:"HT1", name:"God",        color:"#FF1A1A"},
+            {code:"LT1", name:"Skilled",    color:"#FFFFFF"},
+            {code:"HT2", name:"Legend",     color:"#FFD700"},
+            {code:"LT2", name:"Competent",  color:"#E0E0E0"},
+            {code:"HT3", name:"Master",     color:"#FF8C00"},
+            {code:"LT3", name:"Average",    color:"#B0B0B0"},
+            {code:"HT4", name:"Elite",      color:"#FF4500"},
+            {code:"LT4", name:"Beginner",   color:"#808080"},
+            {code:"HT5", name:"Veteran",    color:"#FF6347"},
+            {code:"LT5", name:"Rookie",     color:"#505050"}
+        ];
+
+        let players = JSON.parse(localStorage.getItem('pufferfish_final')) || {};
+
+        function getTier(points) {
+            const level = Math.min(Math.floor(points / POINTS_PER_TIER), 9);
+            return tierOrder[level];
+        }
+
+        function save() { localStorage.setItem('pufferfish_final', JSON.stringify(players)); }
+
+        function render() {
+            const ranked = Object.entries(players)
+                .map(([n,p])=>({name:n, points:p.points}))
+                .sort((a,b)=>b.points-a.points)
+                .map((p,i)=>({...p, rank:i+1}));
+
+            const lb = document.getElementById('leaderboard');
+            lb.innerHTML = '';
+
+            tierOrder.forEach(t => {
+                const section = document.createElement('div');
+                section.className = 'tier-section';
+                section.innerHTML = `<div class="tier-header" style="background:#222;color:${t.color}">${t.code} ${t.name}</div>`;
+                const ul = document.createElement('div');
+
+                const playersInTier = ranked.filter(p=>getTier(p.points).code===t.code);
+                if (playersInTier.length===0) {
+                    ul.innerHTML = '<div style="text-align:center;color:#666;padding:10px">No players yet</div>';
+                } else {
+                    playersInTier.forEach(p=>{
+                        const div = document.createElement('div');
+                        div.className = 'player-entry';
+                        div.innerHTML = `
+                            <div>
+                                <span style="color:#FFD700;font-weight:bold">#${p.rank}</span>
+                                <span class="player-name" onclick="show('${p.name}')">${p.name}</span>
+                            </div>
+                            <div class="player-points">${p.points} pts</div>
+                        `;
+                        ul.appendChild(div);
+                    });
+                }
+                section.appendChild(ul);
+                lb.appendChild(section);
+            });
+        }
+
+        function show(name) {
+            if (!players[name]) return error();
+            const p = players[name];
+            const tier = getTier(p.points);
+            const rank = Object.entries(players)
+                .map(([n,d])=>({n,points:d.points}))
+                .sort((a,b)=>b.points-a.points)
+                .findIndex(x=>x.n===name)+1;
+
+            const circles = Array(10).fill().map((_,i)=>
+                `<div class="circle ${i<Math.min(p.points/POINTS_PER_TIER,9)?'active':''}"></div>`
+            ).join('');
+
+            document.getElementById('modal-content').innerHTML = `
+                <div style="text-align:center">
+                    <div class="avatar"><img src="https://minotar.net/avatar/${name}/128"></div>
+                    <h2>${name}</h2>
+                    <div style="background:#333;padding:8px 20px;border-radius:20px;display:inline-block;color:${tier.color}">${tier.code} ${tier.name}</div>
+                    <h1 style="color:#FFD700">#${rank} Global</h1>
+                    <h2>${p.points} Points</h2>
+                    <div class="tier-circles">${circles}</div>
+                </div>
+            `;
+            document.getElementById('scorecard-modal').style.display='block';
+            document.getElementById('overlay').style.display='block';
+        }
+
+        function closeModal() {
+            document.getElementById('scorecard-modal').style.display='none';
+            document.getElementById('overlay').style.display='none';
+        }
+
+        function error() {
+            const t = document.getElementById('error-toast');
+            t.style.display='block';
+            setTimeout(()=>t.style.display='none',4000);
+        }
+
+        // Staff login
+        document.getElementById('login-btn').onclick=()=>{document.getElementById('overlay').style.display='block';document.getElementById('login-modal').style.display='block';}
+        document.getElementById('login-form').onsubmit=e=>{
+            e.preventDefault();
+            if(document.getElementById('user').value==='staff' && document.getElementById('pass').value==='K9$mPx!vR3qL8wZ2nF5t'){
+                document.getElementById('staff-panel').style.display='block';
+                document.getElementById('login-btn').style.display='none';
+                document.getElementById('overlay').style.display='none';
+                document.getElementById('login-modal').style.display='none';
+            }else alert('Wrong credentials');
+        };
+
+        document.getElementById('add-player-form').onsubmit=e=>{
+            e.preventDefault();
+            const name=document.getElementById('add-username').value.trim();
+            const pts=parseInt(document.getElementById('add-points').value);
+            if(name && pts>=0){players[name]={points:pts};save();render();}
+            document.getElementById('add-username').value='';document.getElementById('add-points').value='';
+        };
+
+        document.getElementById('remove-player-form').onsubmit=e=>{
+            e.preventDefault();
+            const name=document.getElementById('remove-username').value.trim();
+            if(players[name]){delete players[name];save();render();}
+            document.getElementById('remove-username').value='';
+        };
+
+        let to;
+        document.getElementById('search-bar').oninput=e=>{
+            clearTimeout(to);
+            const q=e.target.value.trim().toLowerCase();
+            if(q.length<2) return;
+            to=setTimeout(()=>{
+                const match=Object.keys(players).find(n=>n.toLowerCase()===q);
+                if(match){show(match);e.target.value='';}else error();
+            },500);
+        };
+
+        document.getElementById('overlay').onclick=()=>{document.getElementById('overlay').style.display='none';document.getElementById('login-modal').style.display='none';document.getElementById('scorecard-modal').style.display='none';}
+
+        render();
+    </script>
+</body>
+</html>
