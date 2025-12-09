@@ -76,16 +76,16 @@
 
         // CORRECT ORDER + CORRECT POINT SYSTEM
         const tierOrder = [
-            {code:"LT5", name:"Rookie",     color:"#505050"},  // 0–99
-            {code:"HT5", name:"Veteran",    color:"#FF6347"},  // 100–199
-            {code:"LT4", name:"Beginner",   color:"#808080"},  // 200–299
-            {code:"HT4", name:"Elite",      color:"#FF4500"},  // 300–399
-            {code:"LT3", name:"Average",    color:"#B0B0B0"},  // 400–499
-            {code:"HT3", name:"Master",     color:"#FF8C00"},  // 500–599
-            {code:"LT2", name:"Competent",  color:"#E0E0E0"},  // 600–699
-            {code:"HT2", name:"Legend",     color:"#FFD700"},  // 700–799
-            {code:"LT1", name:"Skilled",    color:"#FFFFFF"},  // 800–899
-            {code:"HT1", name:"God",        color:"#FF1A1A"}   // 900+
+            {code:"HT1", name:"God",        color:"#FF1A1A"},  // 0–99
+            {code:"LT1", name:"Skilled",    color:"#FFFFFF"},  // 100–199
+            {code:"HT2", name:"Legend",     color:"#FFD700"},  // 200–299
+            {code:"LT2", name:"Competent",  color:"#E0E0E0"},  // 300–399
+            {code:"HT3", name:"Master",     color:"#FF8C00"},  // 400–499
+            {code:"LT3", name:"Average",    color:"#B0B0B0"},  // 500–599
+            {code:"HT4", name:"Elite",      color:"#FF4500"},  // 600–699
+            {code:"LT4", name:"Beginner",   color:"#808080"},  // 700–799
+            {code:"HT5", name:"Veteran",    color:"#FF6347"},  // 800–899
+            {code:"LT5", name:"Rookie",     color:"#505050"}   // 900+
         ];
 
         let players = JSON.parse(localStorage.getItem('pufferfish_final')) || {};
@@ -206,3 +206,4 @@
     </script>
 </body>
 </html>
+
