@@ -74,25 +74,39 @@
     <script>
         const POINTS_PER_TIER = 100;
 
-        // HT1 GOD AT TOP → LT5 ROOKIE AT BOTTOM (exactly what you want)
-        const tierOrder = [
-            {code:"HT1", name:"God",        color:"#FF1A1A"},   // 900+
-            {code:"LT1", name:"Skilled",    color:"#FFFFFF"},   // 800–899
-            {code:"HT2", name:"Legend",     color:"#FFD700"},   // 700–799
-            {code:"LT2", name:"Competent",  color:"#E0E0E0"},   // 600–699
-            {code:"HT3", name:"Master",     color:"#FF8C00"},   // 500–599
-            {code:"LT3", name:"Average",    color:"#B0B0B0"},   // 400–499
-            {code:"HT4", name:"Elite",      color:"#FF4500"},   // 300–399
-            {code:"LT4", name:"Beginner",   color:"#808080"},   // 200–299
-            {code:"HT5", name:"Veteran",    color:"#FF6347"},   // 100–199
-            {code:"LT5", name:"Rookie",     color:"#505050"}    // 0–99
+        // VISUAL ORDER (exactly how you want it displayed)
+        const displayOrder = [
+            {code:"LT5", name:"Rookie",     color:"#505050"},
+            {code:"HT5", name:"Veteran",    color:"#FF6347"},
+            {code:"LT4", name:"Beginner",   color:"#808080"},
+            {code:"HT4", name:"Elite",      color:"#FF4500"},
+            {code:"LT3", name:"Average",    color:"#B0B0B0"},
+            {code:"HT3", name:"Master",     color:"#FF8C00"},
+            {code:"LT2", name:"Competent",  color:"#E0E0E0"},
+            {code:"HT2", name:"Legend",     color:"#FFD700"},
+            {code:"LT1", name:"Skilled",    color:"#FFFFFF"},
+            {code:"HT1", name:"God",        color:"#FF1A1A"}
+        ];
+
+        // POINT → TIER MAPPING (NOW CORRECT – higher points = higher tier)
+        const tierByPoints = [
+            {code:"LT5", name:"Rookie",     color:"#505050"},  // 0–99
+            {code:"LT4", name:"Beginner",   color:"#808080"},  // 100–199
+            {code:"LT3", name:"Average",    color:"#B0B0B0"},  // 200–299
+            {code:"LT2", name:"Competent",  color:"#E0E0E0"},  // 300–399
+            {code:"LT1", name:"Skilled",    color:"#FFFFFF"},  // 400–499
+            {code:"HT5", name:"Veteran",    color:"#FF6347"},  // 500–599
+            {code:"HT4", name:"Elite",      color:"#FF4500"},  // 600–699
+            {code:"HT3", name:"Master",     color:"#FF8C00"},  // 700–799
+            {code:"HT2", name:"Legend",     color:"#FFD700"},  // 800–899
+            {code:"HT1", name:"God",        color:"#FF1A1A"}   // 900+
         ];
 
         let players = JSON.parse(localStorage.getItem('pufferfish_final')) || {};
 
         function getTier(points) {
             const level = Math.min(Math.floor(points / POINTS_PER_TIER), 9);
-            return tierOrder[level];
+            return tierByPoints[level];
         }
 
         function save() { localStorage.setItem('pufferfish_final', JSON.stringify(players)); }
@@ -106,7 +120,7 @@
             const lb = document.getElementById('leaderboard');
             lb.innerHTML = '';
 
-            tierOrder.forEach(t => {
+            displayOrder.forEach(t => {
                 const section = document.createElement('div');
                 section.className = 'tier-section';
                 section.innerHTML = `<div class="tier-header" style="color:${t.color}">${t.code} ${t.name}</div><div>`;
@@ -160,16 +174,8 @@
             document.getElementById('overlay').style.display='block';
         }
 
-        function closeModal() {
-            document.getElementById('scorecard-modal').style.display='none';
-            document.getElementById('overlay').style.display='none';
-        }
-
-        function error() {
-            const t = document.getElementById('error-toast');
-            t.style.display='block';
-            setTimeout(()=>t.style.display='none',4000);
-        }
+        function closeModal() { document.getElementById('scorecard-modal').style.display='none'; document.getElementById('overlay').style.display='none'; }
+        function error() { const t=document.getElementById('error-toast'); t.style.display='block'; setTimeout(()=>t.style.display='none',4000); }
 
         document.getElementById('login-btn').onclick=()=>{document.getElementById('overlay').style.display='block';document.getElementById('login-modal').style.display='block';}
         document.getElementById('login-form').onsubmit=e=>{
